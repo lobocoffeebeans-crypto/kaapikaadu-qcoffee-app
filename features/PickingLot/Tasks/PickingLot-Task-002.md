@@ -3,8 +3,10 @@ Objective
 Implement the MasterData layer that supplies dropdown values to the UI.
 
 Read Before Starting
-PickingLot.design.md
-docs/master-data.md
+features/PickingLot/PickingLot.feature.md
+features/PickingLot/PickingLot.design.md
+features/PickingLot/PickingLot.screen.md
+features/PickingLot/PickingLot.api.md
 Scope
 
 Create:

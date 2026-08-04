@@ -1,10 +1,13 @@
 import TextField from '../components/TextField';
 import Dropdown from '../components/Dropdown';
+import CheckboxGroup from '../components/CheckboxGroup';
 import SaveButton from '../components/SaveButton';
+import CancelButton from '../components/CancelButton';
 import { usePickingLot } from '../hooks/usePickingLot';
 import { createPickingLot } from '../services/pickingLotService';
 import { masterDataService } from '../services/masterDataService';
-import { processOptions } from '../constants/dropdown';
+import { VALIDATION_MESSAGE_KEYS } from '../constants/pickingLot';
+import { getValidationMessage } from '../constants/translations';
 import type { PickingLotFormData } from '../types/PickingLot';
 
 const CreatePickingLot = () => {
@@ -17,6 +20,7 @@ const CreatePickingLot = () => {
     validateCherryWeight,
     validateHarvestDate,
     today,
+    language,
   } = usePickingLot();
 
   const blockOptions = masterDataService.getBlocks();
@@ -24,14 +28,28 @@ const CreatePickingLot = () => {
 
   const onSubmit = (data: PickingLotFormData) => {
     createPickingLot(data);
-    reset();
+    reset({
+      harvestDate: today,
+      variety: '',
+      blocks: [],
+      totalCherryWeightKg: 0,
+    });
+  };
+
+  const onCancel = () => {
+    reset({
+      harvestDate: today,
+      variety: '',
+      blocks: [],
+      totalCherryWeightKg: 0,
+    });
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-start justify-center px-4 py-8">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
         <h1 className="text-xl font-semibold text-gray-900 mb-6 text-center">
-          Create Picking Lot
+          New Picking Lot
         </h1>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -41,18 +59,8 @@ const CreatePickingLot = () => {
             max={today}
             error={errors.harvestDate?.message}
             registration={register('harvestDate', {
-              required: 'Harvest Date is required',
+              required: getValidationMessage(VALIDATION_MESSAGE_KEYS.HARVEST_DATE_REQUIRED, language),
               validate: validateHarvestDate,
-            })}
-          />
-
-          <Dropdown
-            label="Block"
-            options={blockOptions}
-            placeholder="Select Block"
-            error={errors.block?.message}
-            registration={register('block', {
-              required: 'Block is required',
             })}
           />
 
@@ -62,33 +70,35 @@ const CreatePickingLot = () => {
             placeholder="Select Variety"
             error={errors.variety?.message}
             registration={register('variety', {
-              required: 'Variety is required',
+              required: getValidationMessage(VALIDATION_MESSAGE_KEYS.VARIETY_REQUIRED, language),
             })}
           />
 
-          <Dropdown
-            label="Process"
-            options={processOptions}
-            placeholder="Select Process"
-            error={errors.process?.message}
-            registration={register('process', {
-              required: 'Process is required',
+          <CheckboxGroup
+            label="Blocks"
+            options={blockOptions}
+            error={errors.blocks?.message}
+            registration={register('blocks', {
+              required: getValidationMessage(VALIDATION_MESSAGE_KEYS.BLOCK_REQUIRED, language),
+              validate: (value: string[]) =>
+                value.length > 0 || getValidationMessage(VALIDATION_MESSAGE_KEYS.BLOCK_REQUIRED, language),
             })}
           />
 
           <TextField
-            label="Cherry Weight (kg)"
+            label="Total Cherry Weight (kg)"
             type="number"
-            error={errors.cherryWeight?.message}
-            registration={register('cherryWeight', {
-              required: 'Cherry Weight is required',
+            error={errors.totalCherryWeightKg?.message}
+            registration={register('totalCherryWeightKg', {
+              required: getValidationMessage(VALIDATION_MESSAGE_KEYS.WEIGHT_REQUIRED, language),
               valueAsNumber: true,
               validate: validateCherryWeight,
             })}
           />
 
-          <div className="mt-6">
+          <div className="mt-6 space-y-3">
             <SaveButton disabled={!isValid} />
+            <CancelButton onClick={onCancel} />
           </div>
         </form>
       </div>

@@ -30,7 +30,7 @@ Total Cherry Weight
 
 -------------------------------------
 
-SAVE
+[SAVE]  [ CANCEL ] 
 
 ------------------------------------------------
 
@@ -83,7 +83,7 @@ The same block cannot be selected twice.
 
 
 Save Button Rules
-
+Save button is the primary button
 The Save button should only be enabled when:
 
 Harvest Date is valid
@@ -146,7 +146,7 @@ One validation I'd add for your estate workflow
 
 I recommend adding a confirmation when the user has entered data but tries to leave the page without saving.
 
-Rule UI-008 – Unsaved Changes
+Rule UI-008 – Unsaved Changes /Cancel Button
 
 If the user has modified any field and attempts to navigate away or refresh the page:
 Show: "You have unsaved changes. Do you want to leave without saving?"

@@ -3,7 +3,8 @@ import Dropdown from '../components/Dropdown';
 import SaveButton from '../components/SaveButton';
 import { usePickingLot } from '../hooks/usePickingLot';
 import { createPickingLot } from '../services/pickingLotService';
-import { blockOptions, varietyOptions, processOptions } from '../constants/dropdown';
+import { masterDataService } from '../services/masterDataService';
+import { processOptions } from '../constants/dropdown';
 import type { PickingLotFormData } from '../types/PickingLot';
 
 const CreatePickingLot = () => {
@@ -17,6 +18,9 @@ const CreatePickingLot = () => {
     validateHarvestDate,
     today,
   } = usePickingLot();
+
+  const blockOptions = masterDataService.getBlocks();
+  const varietyOptions = masterDataService.getVarieties();
 
   const onSubmit = (data: PickingLotFormData) => {
     createPickingLot(data);

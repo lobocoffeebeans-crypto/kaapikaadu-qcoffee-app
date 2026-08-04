@@ -78,5 +78,5 @@ npm install
 npm run dev 
 Build Production
 npm run build
-
+npm run preview
 ```

@@ -23,6 +23,8 @@ Display validation messages inline.
 
 Disable Save until the form is valid.
 
+Display Message when Save is successful
+
 Prevent duplicate submissions while saving.
 
 Out of Scope

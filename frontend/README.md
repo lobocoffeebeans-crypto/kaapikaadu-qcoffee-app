@@ -72,4 +72,11 @@ export default defineConfig([
   },
 ])
 
+How to build development
+cd /c/Development/kaapikaadu-project/frontend
+npm install
+npm run dev 
+Build Production
+npm run build
+
 ```

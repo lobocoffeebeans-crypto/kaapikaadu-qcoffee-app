@@ -1,6 +1,7 @@
 import type { MasterDataOption } from '../types/PickingLot';
 import type { Language, MasterDataCategory } from '../types/masterData';
 import { mockVarieties, mockBlocks, mockStatuses } from '../data/mockMasterData';
+import { DEFAULT_LANGUAGE } from '../config/appConfig';
 
 /**
  * Dropdown-ready option structure expected by UI components.
@@ -39,7 +40,7 @@ class MasterDataService {
   /**
    * Get dropdown-ready options for a category in the specified language.
    */
-  getOptions(category: MasterDataCategory, language: Language = 'en'): DropdownOption[] {
+  getOptions(category: MasterDataCategory, language: Language = DEFAULT_LANGUAGE): DropdownOption[] {
     const options = this.data[category];
     return options.map((option) => ({
       value: option.code,
@@ -50,21 +51,21 @@ class MasterDataService {
   /**
    * Get all varieties as dropdown options.
    */
-  getVarieties(language: Language = 'en'): DropdownOption[] {
+  getVarieties(language: Language = DEFAULT_LANGUAGE): DropdownOption[] {
     return this.getOptions('variety', language);
   }
 
   /**
    * Get all blocks as dropdown options.
    */
-  getBlocks(language: Language = 'en'): DropdownOption[] {
+  getBlocks(language: Language = DEFAULT_LANGUAGE): DropdownOption[] {
     return this.getOptions('block', language);
   }
 
   /**
    * Get all statuses as dropdown options.
    */
-  getStatuses(language: Language = 'en'): DropdownOption[] {
+  getStatuses(language: Language = DEFAULT_LANGUAGE): DropdownOption[] {
     return this.getOptions('status', language);
   }
 }

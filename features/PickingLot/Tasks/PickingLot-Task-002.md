@@ -81,3 +81,53 @@ Added exports for `Language` and `MasterDataCategory` types.
 - ✅ __MasterDataOption model exists__ - Already created in Task-001, reused without duplication
 - ✅ __Build passes__ - `tsc -b && vite build` succeeds with exit code 0
 - ✅ __Lint passes__ - `eslint .` succeeds with exit code 0
+
+
+
+Added Playwright tests to verify Kannada labels in the MasterData dropdown fields, and wired the UI to use the MasterDataService.
+
+## Changes Made
+
+### 1. `frontend/src/pages/CreatePickingLot.tsx` (Modified)
+
+Updated the page to use `masterDataService.getBlocks()` and `masterDataService.getVarieties()` instead of hardcoded constants. This ensures the dropdown options reflect the language set via the env file (`VITE_APP_LANGUAGE=kn`).
+
+### 2. `frontend/playwright.config.ts` (New)
+
+Playwright configuration:
+
+- Test directory: `./tests`
+- Base URL: `http://localhost:5173`
+- Chromium project
+- Auto-starts the Vite dev server via `webServer` config
+
+### 3. `frontend/tests/kannada-labels.spec.ts` (New)
+
+Three Playwright tests verifying Kannada labels:
+
+1. __Block dropdown shows Kannada labels__ - Verifies all 5 block options display Kannada labels (ಬ್ಲಾಕ್ 1 through ಬ್ಲಾಕ್ 5)
+2. __Variety dropdown shows Kannada labels__ - Verifies all 6 variety options display Kannada labels (ಎಸ್ಎಲ್ಎನ್ 6, ಎಸ್ಎಲ್ 28, ಕ್ಯಾಟುರಾ, ಬರ್ಬನ್, ಟಿಪಿಕಾ, ಗೀಶಾ)
+3. __Dropdown values remain language-independent codes__ - Verifies the `value` attributes remain codes (BLOCK01, BLOCK05, SLN6, GEISHA) even though labels are translated
+
+### 4. `frontend/package.json` (Modified)
+
+- Added `@playwright/test` dev dependency
+- Added `"test": "playwright test"` script
+
+## Test Results
+
+All 3 tests passed:
+
+```javascript
+[1/3] [chromium] › tests\kannada-labels.spec.ts:23:3 › Variety dropdown shows Kannada labels
+[2/3] [chromium] › tests\kannada-labels.spec.ts:4:3 › Block dropdown shows Kannada labels
+[3/3] [chromium] › tests\kannada-labels.spec.ts:43:3 › Dropdown values remain language-independent codes
+  3 passed (12.9s)
+```
+
+## Verification
+
+- ✅ __Playwright tests pass__ - All 3 tests confirm Kannada labels render correctly
+- ✅ __Build passes__ - `tsc -b && vite build` succeeds
+- ✅ __Lint passes__ - `eslint .` succeeds
+- ✅ __Language-independent codes preserved__ - Test confirms dropdown values remain codes (BLOCK01, SLN6, etc.) while labels are translated to Kannada

@@ -53,12 +53,11 @@ export interface MasterDataOption {
 
 /**
  * PickingLotFormData - Form-specific data structure used by the UI form.
- * Kept for backward compatibility with existing form implementation.
+ * Supports multi-select blocks and excludes process (BR-005).
  */
 export interface PickingLotFormData {
   harvestDate: string;
-  block: string;
   variety: string;
-  process: string;
-  cherryWeight: number;
+  blocks: string[];
+  totalCherryWeightKg: number;
 }

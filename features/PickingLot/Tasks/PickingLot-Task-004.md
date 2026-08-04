@@ -34,3 +34,4 @@ Acceptance Criteria
 All validation scenarios from PickingLot.test.md pass.
 First invalid field receives focus after Save.
 Error messages clear when corrected.
+

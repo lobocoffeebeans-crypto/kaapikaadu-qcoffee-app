@@ -3,8 +3,10 @@ Objective
 Build the Create Picking Lot page.
 
 Read Before Starting
-PickingLot.feature.md
-PickingLot.design.md
+features/PickingLot/PickingLot.feature.md
+features/PickingLot/PickingLot.design.md
+features/PickingLot/PickingLot.screen.md
+features/PickingLot/PickingLot.api.md
 Scope
 
 Create the page with:

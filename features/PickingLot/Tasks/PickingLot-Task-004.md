@@ -1,6 +1,7 @@
+Status -DONE 
 Objective
 
-Implement all UI validation rules.
+Implement all UI validation rules. 
 
 Read Before Starting
 features/PickingLot/PickingLot.feature.md

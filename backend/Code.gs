@@ -11,6 +11,7 @@
 // Sheet names
 var PICKING_LOTS_SHEET = 'PickingLots';
 var PICKING_LOT_BLOCKS_SHEET = 'PickingLotBlocks';
+var MASTER_DATA_SHEET = 'MasterData';
 
 // PickingLots sheet columns (1-based)
 var PL_LOT_ID = 1;
@@ -24,6 +25,14 @@ var PL_CREATED_BY = 7;
 // PickingLotBlocks sheet columns (1-based)
 var PLB_LOT_ID = 1;
 var PLB_BLOCK_CODE = 2;
+
+// MasterData sheet columns (1-based)
+var MD_TYPE = 1;
+var MD_CODE = 2;
+var MD_ENGLISH = 3;
+var MD_KANNADA = 4;
+var MD_ACTIVE = 5;
+var MD_SORT_ORDER = 6;
 
 /**
  * HTTP POST handler - creates a new Picking Lot.
@@ -64,6 +73,166 @@ function doPost(e) {
       message: 'Something went wrong while saving.'
     });
   }
+}
+
+/**
+ * HTTP GET handler - serves MasterData and other read resources.
+ *
+ * Supported resources:
+ *   resource=masterdata  -> returns active MasterData records.
+ *
+ * @param {Object} e The event object containing the GET parameters.
+ * @return {TextOutput} JSON response.
+ */
+function doGet(e) {
+  try {
+    var resource = e.parameter.resource;
+
+    if (resource === 'masterdata') {
+      return handleMasterData();
+    }
+
+    return buildResponse({
+      success: false,
+      errorCode: 'INVALID_RESOURCE',
+      message: 'Unknown resource requested.'
+    });
+  } catch (err) {
+    return buildResponse({
+      success: false,
+      errorCode: 'SERVER_ERROR',
+      message: 'Something went wrong while loading data.'
+    });
+  }
+}
+
+/**
+ * Read the MasterData sheet and return active records as JSON.
+ *
+ * @return {TextOutput} JSON response with active MasterData records.
+ */
+function handleMasterData() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(MASTER_DATA_SHEET);
+
+  if (!sheet) {
+    return buildResponse({
+      success: false,
+      errorCode: 'SHEET_NOT_FOUND',
+      message: 'MasterData sheet not found.'
+    });
+  }
+
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+
+  // Empty sheet (no header) -> return empty data
+  if (lastRow < 1 || lastCol < 1) {
+    return buildResponse({ success: true, data: [] });
+  }
+
+  // Read header row to locate required columns
+  var header = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var columnMap = buildColumnMap(header);
+
+  var requiredColumns = ['Type', 'Code', 'English', 'Kannada', 'Active', 'SortOrder'];
+  var missing = requiredColumns.filter(function (col) {
+    return columnMap[col] === undefined;
+  });
+
+  if (missing.length > 0) {
+    return buildResponse({
+      success: false,
+      errorCode: 'MISSING_COLUMNS',
+      message: 'MasterData sheet is missing required columns: ' + missing.join(', ') + '.'
+    });
+  }
+
+  // No data rows -> return empty data
+  if (lastRow < 2) {
+    return buildResponse({ success: true, data: [] });
+  }
+
+  var values = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  var data = [];
+
+  for (var i = 0; i < values.length; i++) {
+    var row = values[i];
+
+    var type = String(row[columnMap['Type']] || '').trim();
+    var code = String(row[columnMap['Code']] || '').trim();
+    var en = String(row[columnMap['English']] || '').trim();
+    var kn = String(row[columnMap['Kannada']] || '').trim();
+    var active = isActive(row[columnMap['Active']]);
+    var sortOrder = toNumber(row[columnMap['SortOrder']]);
+
+    // Skip blank rows
+    if (!type && !code) {
+      continue;
+    }
+
+    // Only return active records
+    if (!active) {
+      continue;
+    }
+
+    data.push({
+      type: type,
+      code: code,
+      en: en,
+      kn: kn,
+      active: true,
+      sortOrder: sortOrder
+    });
+  }
+
+  return buildResponse({ success: true, data: data });
+}
+
+/**
+ * Build a map of header name -> column index (0-based).
+ *
+ * @param {Array} header The header row values.
+ * @return {Object} Map of header name to column index.
+ */
+function buildColumnMap(header) {
+  var map = {};
+  for (var i = 0; i < header.length; i++) {
+    var name = String(header[i] || '').trim();
+    if (name) {
+      map[name] = i;
+    }
+  }
+  return map;
+}
+
+/**
+ * Interpret the Active column value as a boolean.
+ * Accepts TRUE/FALSE, true/false, 1/0, YES/NO, Y/N.
+ *
+ * @param {*} value The raw cell value.
+ * @return {boolean} Whether the record is active.
+ */
+function isActive(value) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+  var text = String(value || '').trim().toUpperCase();
+  return text === 'TRUE' || text === 'YES' || text === 'Y' || text === '1';
+}
+
+/**
+ * Convert a SortOrder cell value to a number.
+ *
+ * @param {*} value The raw cell value.
+ * @return {number} The numeric sort order (0 if not a number).
+ */
+function toNumber(value) {
+  var num = Number(value);
+  return isNaN(num) ? 0 : num;
 }
 
 /**

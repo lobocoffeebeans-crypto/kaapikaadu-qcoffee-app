@@ -1,3 +1,4 @@
+Status -DONE
 PickingLot-001.md
 Objective
 

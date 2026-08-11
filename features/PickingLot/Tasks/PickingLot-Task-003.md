@@ -1,3 +1,4 @@
+Status - DONE
 Objective
 
 Build the Create Picking Lot page.

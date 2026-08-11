@@ -1,4 +1,4 @@
-Task 05A – Create Picking Lot API (Happy Path)
+Task 05A – Create Picking Lot API (Happy Path) -DONE 
 Objective
 
 Connect the Create Picking Lot screen to the backend and successfully create a Picking Lot.

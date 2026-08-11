@@ -1,14 +1,15 @@
+import { useState } from 'react';
 import TextField from '../components/TextField';
 import Dropdown from '../components/Dropdown';
 import CheckboxGroup from '../components/CheckboxGroup';
 import SaveButton from '../components/SaveButton';
 import CancelButton from '../components/CancelButton';
 import { usePickingLot } from '../hooks/usePickingLot';
-import { createPickingLot } from '../services/pickingLotService';
+import { pickingLotService } from '../services/pickingLotService';
 import { masterDataService } from '../services/masterDataService';
 import { VALIDATION_MESSAGE_KEYS } from '../constants/pickingLot';
 import { getValidationMessage } from '../constants/translations';
-import type { PickingLotFormData } from '../types/PickingLot';
+import type { PickingLotFormData, CreatePickingLotRequest } from '../types/PickingLot';
 
 const CreatePickingLot = () => {
   const {
@@ -23,17 +24,34 @@ const CreatePickingLot = () => {
     language,
   } = usePickingLot();
 
+  const [isSaving, setIsSaving] = useState(false);
+  const [successLotId, setSuccessLotId] = useState<string | null>(null);
+
   const blockOptions = masterDataService.getBlocks();
   const varietyOptions = masterDataService.getVarieties();
 
-  const onSubmit = (data: PickingLotFormData) => {
-    createPickingLot(data);
-    reset({
-      harvestDate: today,
-      variety: '',
-      blocks: [],
-      totalCherryWeightKg: 0,
-    });
+  const onSubmit = async (data: PickingLotFormData) => {
+    setIsSaving(true);
+    try {
+      const request: CreatePickingLotRequest = {
+        harvestDate: data.harvestDate,
+        varietyCode: data.variety,
+        totalCherryWeightKg: data.totalCherryWeightKg,
+        blockCodes: data.blocks,
+      };
+      const response = await pickingLotService.createPickingLot(request);
+      setSuccessLotId(response.lotId);
+      reset({
+        harvestDate: today,
+        variety: '',
+        blocks: [],
+        totalCherryWeightKg: 0,
+      });
+    } catch {
+      // Out of scope: network/error handling. Keep form intact.
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const onCancel = () => {
@@ -43,6 +61,10 @@ const CreatePickingLot = () => {
       blocks: [],
       totalCherryWeightKg: 0,
     });
+  };
+
+  const onCloseSuccess = () => {
+    setSuccessLotId(null);
   };
 
   return (
@@ -97,11 +119,40 @@ const CreatePickingLot = () => {
           />
 
           <div className="mt-6 space-y-3">
-            <SaveButton disabled={!isValid} />
-            <CancelButton onClick={onCancel} />
+            <SaveButton disabled={!isValid} loading={isSaving} />
+            <CancelButton onClick={onCancel} disabled={isSaving} />
           </div>
         </form>
       </div>
+
+      {successLotId && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="success-title"
+        >
+          <div className="bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
+            <div className="text-center">
+              <div className="text-4xl mb-3">✅</div>
+              <h2 id="success-title" className="text-lg font-semibold text-gray-900 mb-2">
+                Picking Lot Created
+              </h2>
+              <p className="text-sm text-gray-600 mb-6">
+                Lot ID: <span className="font-medium text-gray-900">{successLotId}</span>
+              </p>
+              <button
+                type="button"
+                onClick={onCloseSuccess}
+                className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-lg text-sm
+                           hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -9,4 +9,8 @@ import type { Language } from '../types/masterData';
 export const DEFAULT_LANGUAGE: Language =
   import.meta.env.VITE_APP_LANGUAGE === 'kn' ? 'kn' : 'en';
 
-  console.log("Current language:", DEFAULT_LANGUAGE);
+/**
+ * Base URL for the Picking Lot API (Google Apps Script Web App deployment).
+ * Configure via VITE_API_BASE_URL. Falls back to empty string (same origin).
+ */
+export const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? '';

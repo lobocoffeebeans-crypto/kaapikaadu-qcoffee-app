@@ -1,35 +1,52 @@
+Task 05A – Create Picking Lot API (Happy Path)
 Objective
 
-Connect the feature to the backend.
+Connect the Create Picking Lot screen to the backend and successfully create a Picking Lot.
 
 Read Before Starting
-PickingLot.api.md
-PickingLot.design.md
+features/PickingLot/PickingLot.feature.md
+features/PickingLot/PickingLot.design.md
+features/PickingLot/PickingLot.screen.md
+features/PickingLot/PickingLot.api.md
+
+
 Scope
+Frontend
 
 Implement:
 
 PickingLotService
-API client integration
-Create Picking Lot request
-Handle success response
-Handle validation errors
-Handle server errors
-Handle network errors
+API client
+Request DTO
+Response DTO
+Submit button integration
+Loading indicator while saving
+Disable Save button during request
+Handle successful response
+Display generated LotID
+Navigate to Success screen (or success dialog)
+Backend (Google Apps Script)
 
-Backend implementation:
+Implement:
 
-Google Apps Script endpoint
-Write to PickingLots
-Write to PickingLotBlocks
+HTTP POST endpoint
+Request validation (required fields only)
 Generate LotID
+Write Picking Lot record
+Write PickingLotBlocks records
 Set Status = CREATED
+Return success response
 Out of Scope
+Validation error handling
+Network failures
+Retry
 Offline support
 Authentication
 QR codes
 Acceptance Criteria
-Successful save creates records in Google Sheets.
-UI displays returned LotID.
-Backend validation errors display correctly.
-Network failures do not lose entered data.
+Save creates Picking Lot in Google Sheets.
+PickingLotBlocks are created correctly.
+LotID is generated correctly (PLYYMMDD0001).
+Success response contains LotID.
+UI displays generated LotID.
+Save button cannot be pressed twice while saving.

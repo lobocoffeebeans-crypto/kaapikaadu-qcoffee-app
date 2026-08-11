@@ -1,3 +1,4 @@
+PL-005C  PickingLot api endpoint
 PL-006 Integration Tests
 PL-007 UI Polish
 PL-008 Refactoring

@@ -10,6 +10,7 @@ test.describe('Picking Lot API integration', () => {
       const body = request.postDataJSON();
       expect(body.harvestDate).toBe('2026-08-03');
       expect(body.varietyCode).toBe('SLN6');
+      expect(body.processCode).toBe('NATURAL');
       expect(body.totalCherryWeightKg).toBe(320);
       expect(body.blockCodes).toEqual(['BLOCK01', 'BLOCK03', 'BLOCK05']);
 
@@ -33,6 +34,9 @@ test.describe('Picking Lot API integration', () => {
 
     const varietySelect = page.locator('select').nth(0);
     await varietySelect.selectOption('SLN6');
+
+    const processSelect = page.locator('select').nth(1);
+    await processSelect.selectOption('NATURAL');
 
     const blockCheckboxes = page.locator('input[type="checkbox"]');
     await blockCheckboxes.nth(0).check(); // BLOCK01
@@ -75,6 +79,9 @@ test.describe('Picking Lot API integration', () => {
 
     const varietySelect = page.locator('select').nth(0);
     await varietySelect.selectOption('SLN6');
+
+    const processSelect = page.locator('select').nth(1);
+    await processSelect.selectOption('NATURAL');
 
     const firstBlock = page.locator('input[type="checkbox"]').first();
     await firstBlock.check();
@@ -123,6 +130,9 @@ test.describe('Picking Lot API integration', () => {
     const varietySelect = page.locator('select').nth(0);
     await varietySelect.selectOption('SLN6');
 
+    const processSelect = page.locator('select').nth(1);
+    await processSelect.selectOption('NATURAL');
+
     const firstBlock = page.locator('input[type="checkbox"]').first();
     await firstBlock.check();
 
@@ -143,6 +153,7 @@ test.describe('Picking Lot API integration', () => {
     const today = new Date().toISOString().split('T')[0];
     await expect(harvestDate).toHaveValue(today);
     await expect(varietySelect).toHaveValue('');
+    await expect(processSelect).toHaveValue('');
     await expect(firstBlock).not.toBeChecked();
     await expect(weight).toHaveValue('0');
   });

@@ -94,6 +94,8 @@ interface PickingLot {
     harvestDate:Date;
 
     variety:string;
+    
+    process :string;
 
     totalCherryWeightKg:number;
 
@@ -110,14 +112,16 @@ PickingLots
 Column	Field	Example	Stored As
 A	LotID	PL2608030001	Text
 B	HarvestDate	03-Aug-2026	Date
-C	VarietyCode	SLN6	Code
-D	TotalCherryWeightKg	320	Number
-E	StatusCode	CREATED	Code
-F	CreatedDateTime	03-Aug-2026 16:10	DateTime
-G	CreatedBy	Austin	Text
+C	Block	BLOCK01, BLOCK03, BLOCK05	Text (comma-separated)
+D	Variety	SLN6	Code
+E	Process	NAturals	Text
+F	CherryWeightKg	320	Number
+G	CreatedDateTime	03-Aug-2026 16:10	DateTime
+H	CreatedBy	Austin	Text
+I	Status	CREATED	Code
 
 
-2. PickingLotBlocks
+2. PickingLotBlocks (normalized detail)
 Column	Field
 A	LotID
 B	BlockCode

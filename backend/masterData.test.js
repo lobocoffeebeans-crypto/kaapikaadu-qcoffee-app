@@ -5,22 +5,62 @@
  * Run with: node backend/masterData.test.js
  */
 
+// --- Local API log file (logs/api.log) ---
+const fs = require('fs');
+const path = require('path');
+const API_LOG_FILE = path.join(__dirname, '..', 'logs', 'api.log');
+
+/** Append one JSON entry to logs/api.log. Never throws. */
+const writeApiLog = (entry) => {
+  try {
+    fs.mkdirSync(path.dirname(API_LOG_FILE), { recursive: true });
+    fs.appendFileSync(API_LOG_FILE, JSON.stringify(entry) + '\n');
+  } catch (e) {
+    // Logging must never break the tests.
+  }
+};
+
+/** (Re)create logs/api.log with a header line before each run. */
+const initApiLog = () => {
+  try {
+    fs.mkdirSync(path.dirname(API_LOG_FILE), { recursive: true });
+    fs.writeFileSync(API_LOG_FILE, '# Kaapikaadu API request/response log — written by backend/masterData.test.js\n');
+  } catch (e) {
+    // Logging must never break the tests.
+  }
+};
+
 // --- Mock Google Apps Script environment ---
 const MockSheet = (name, rows) => ({
   name,
+  rows,
   getLastRow: () => rows.length,
   getLastColumn: () => (rows.length > 0 ? rows[0].length : 0),
   getRange: (row, col, numRows, numCols) => ({
     getValues: () => {
       const result = [];
       for (let r = row - 1; r < row - 1 + numRows; r++) {
-        result.push(rows[r].slice(col - 1, col - 1 + numCols));
+        result.push(rows[r] ? rows[r].slice(col - 1, col - 1 + numCols) : []);
       }
       return result;
     },
-    setValues: () => {},
+    setValues: (values) => {
+      // Record the write so tests can assert the actual values written.
+      for (let r = 0; r < values.length; r++) {
+        const targetRow = row - 1 + r;
+        if (!rows[targetRow]) {
+          rows[targetRow] = [];
+        }
+        for (let c = 0; c < values[r].length; c++) {
+          rows[targetRow][col - 1 + c] = values[r][c];
+        }
+      }
+    },
   }),
-  appendRow: () => {},
+  appendRow: (values) => {
+    // Record the write so tests can assert the actual values written.
+    rows.push(values);
+  },
 });
 
 const sheets = {};
@@ -48,9 +88,39 @@ global.ContentService = mockContentService;
 global.Session = { getActiveUser: () => ({ getEmail: () => 'test@example.com' }) };
 
 // --- Load the Code.gs implementation ---
-const fs = require('fs');
 const code = fs.readFileSync(__dirname + '/Code.gs', 'utf8');
 eval(code);
+
+initApiLog();
+
+// Wrap doPost/doGet so every API request body and response is also written to logs/api.log.
+const rawDoPost = doPost;
+const rawDoGet = doGet;
+
+doPost = (e) => {
+  const result = rawDoPost(e);
+  writeApiLog({
+    ts: new Date().toISOString(),
+    method: 'POST',
+    endpoint: '/exec',
+    requestBody: e && e.postData ? e.postData.contents : '',
+    responseBody: result && result.content ? result.content : '',
+  });
+  return result;
+};
+
+doGet = (e) => {
+  const result = rawDoGet(e);
+  const resource = (e && e.parameter && e.parameter.resource) || '';
+  writeApiLog({
+    ts: new Date().toISOString(),
+    method: 'GET',
+    endpoint: '/exec?resource=' + resource,
+    requestBody: e && e.parameter ? JSON.stringify(e.parameter) : '',
+    responseBody: result && result.content ? result.content : '',
+  });
+  return result;
+};
 
 // --- Test helpers ---
 let passed = 0;
@@ -188,10 +258,20 @@ assert(response9.data.length === 2, `blank rows skipped, 2 records returned (got
 assert(response9.data[0].code === 'BLOCK_A', 'first record is BLOCK_A');
 assert(response9.data[1].code === 'BLOCK_B', 'second record is BLOCK_B');
 
-// --- Test 10: Regression - doPost still creates a Picking Lot ---
-console.log('\nTest 10: Regression - doPost still creates a Picking Lot');
+// --- Test 10: Process is required in a Picking Lot request ---
+console.log('\nTest 10: Process is required in a Picking Lot request');
+const missingProcessError = validateRequest({
+  harvestDate: '2026-08-03',
+  varietyCode: 'SLN6',
+  totalCherryWeightKg: 320,
+  blockCodes: ['BLOCK01'],
+});
+assert(missingProcessError.errorCode === 'INVALID_PROCESS', 'missing processCode is rejected');
+
+// --- Test 11: Regression - doPost still creates a Picking Lot ---
+console.log('\nTest 11: Regression - doPost still creates a Picking Lot');
 sheets['PickingLots'] = MockSheet('PickingLots', [
-  ['LotID', 'HarvestDate', 'VarietyCode', 'TotalCherryWeightKg', 'StatusCode', 'CreatedDateTime', 'CreatedBy'],
+  ['LotID', 'HarvestDate', 'Block', 'Variety', 'Process', 'CherryWeightKg', 'CreatedDateTime', 'CreatedBy', 'Status'],
 ]);
 sheets['PickingLotBlocks'] = MockSheet('PickingLotBlocks', [
   ['LotID', 'BlockCode'],
@@ -203,6 +283,7 @@ const postResponse = parseResponse(
       contents: JSON.stringify({
         harvestDate: '2026-08-03',
         varietyCode: 'SLN6',
+        processCode: 'NATURAL',
         totalCherryWeightKg: 320,
         blockCodes: ['BLOCK01', 'BLOCK03', 'BLOCK05'],
       }),
@@ -213,6 +294,75 @@ assert(postResponse.success === true, 'doPost success is true');
 assert(postResponse.lotId === 'PL2608030001', `doPost generates LotID PL2608030001 (got ${postResponse.lotId})`);
 assert(postResponse.status === 'CREATED', 'doPost status is CREATED');
 assert(postResponse.message === 'Picking Lot created successfully.', 'doPost message is correct');
+
+// --- Verify the data is ACTUALLY written to the sheets (guards against silent write bugs) ---
+// PickingLots sheet: header + 1 data row. Row must use the deployed column layout:
+// LotID | HarvestDate | Block | Variety | Process | CherryWeightKg | CreatedDateTime | CreatedBy | Status
+const plRows = sheets['PickingLots'].rows;
+assert(plRows.length === 2, `PickingLots has header + 1 data row (got ${plRows.length})`);
+const plRow = plRows[1];
+assert(plRow[0] === 'PL2608030001', `PickingLots LotID written (got ${plRow[0]})`);
+assert(
+  plRow[1] instanceof Date &&
+    plRow[1].getUTCFullYear() === 2026 &&
+    plRow[1].getUTCMonth() === 7 &&
+    plRow[1].getUTCDate() === 3,
+  'PickingLots HarvestDate written as 2026-08-03'
+);
+assert(plRow[2] === 'BLOCK01, BLOCK03, BLOCK05', `PickingLots Block written (got ${plRow[2]})`);
+assert(plRow[3] === 'SLN6', `PickingLots Variety written (got ${plRow[3]})`);
+assert(plRow[4] === 'NATURAL', `PickingLots Process written (got ${JSON.stringify(plRow[4])})`);
+assert(plRow[5] === 320, `PickingLots CherryWeightKg written (got ${plRow[5]})`);
+assert(plRow[6] instanceof Date, 'PickingLots CreatedDateTime written');
+assert(plRow[7] === 'test@example.com', `PickingLots CreatedBy written (got ${plRow[7]})`);
+assert(plRow[8] === 'CREATED', `PickingLots Status written (got ${plRow[8]})`);
+
+// PickingLotBlocks sheet: header + one row per selected Block.
+const plbRows = sheets['PickingLotBlocks'].rows;
+assert(plbRows.length === 4, `PickingLotBlocks has header + 3 data rows (got ${plbRows.length})`);
+assert(
+  plbRows[1][0] === 'PL2608030001' && plbRows[1][1] === 'BLOCK01',
+  `Block BLOCK01 written (got ${JSON.stringify(plbRows[1])})`
+);
+assert(
+  plbRows[2][0] === 'PL2608030001' && plbRows[2][1] === 'BLOCK03',
+  `Block BLOCK03 written (got ${JSON.stringify(plbRows[2])})`
+);
+assert(
+  plbRows[3][0] === 'PL2608030001' && plbRows[3][1] === 'BLOCK05',
+  `Block BLOCK05 written (got ${JSON.stringify(plbRows[3])})`
+);
+
+// --- Test 12: ApiLog sheet records every request body and response ---
+console.log('\nTest 12: ApiLog sheet records every request body and response');
+const apiLogRows = sheets['ApiLog'].rows;
+assert(apiLogRows.length >= 3, `ApiLog has header + at least 2 logged calls (got ${apiLogRows.length})`);
+assert(
+  apiLogRows[0].join('|') === 'Timestamp|Method|Endpoint|RequestBody|ResponseBody',
+  'ApiLog header row is written'
+);
+
+const postLog = apiLogRows.find((r) => r[1] === 'POST');
+assert(!!postLog, 'POST call is logged to ApiLog');
+assert(
+  postLog[3] === JSON.stringify({
+    harvestDate: '2026-08-03',
+    varietyCode: 'SLN6',
+    processCode: 'NATURAL',
+    totalCherryWeightKg: 320,
+    blockCodes: ['BLOCK01', 'BLOCK03', 'BLOCK05'],
+  }),
+  'POST request body is logged to ApiLog'
+);
+assert(
+  postLog[4].includes('PL2608030001') && postLog[4].includes('Picking Lot created successfully.'),
+  'POST response is logged to ApiLog'
+);
+
+const getLogs = apiLogRows.filter((r) => r[1] === 'GET');
+assert(getLogs.length > 0, 'GET calls are logged to ApiLog');
+assert(getLogs[0][3] === JSON.stringify({ resource: 'masterdata' }), 'GET request is logged to ApiLog');
+assert(getLogs[0][4].includes('BLOCK_A'), 'GET MasterData response is logged to ApiLog');
 
 // --- Summary ---
 console.log(`\n${passed} passed, ${failed} failed`);

@@ -18,6 +18,10 @@ export const VALIDATION_MESSAGES: Record<ValidationMessageKey, Record<Language, 
     en: 'Please select a coffee variety.',
     kn: 'ದಯವಿಟ್ಟು ಕಾಫಿ ತಳಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ.',
   },
+  [VALIDATION_MESSAGE_KEYS.PROCESS_REQUIRED]: {
+    en: 'Please select a process.',
+    kn: 'ದಯವಿಟ್ಟು ಪ್ರಕ್ರಿಯೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ.',
+  },
   [VALIDATION_MESSAGE_KEYS.BLOCK_REQUIRED]: {
     en: 'Select at least one block.',
     kn: 'ಕನಿಷ್ಠ ಒಂದು ಬ್ಲಾಕ್ ಆಯ್ಕೆಮಾಡಿ.',

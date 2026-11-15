@@ -14,4 +14,6 @@ export type {
 export type {
   Language,
   MasterDataCategory,
+  MasterDataItem,
+  MasterDataResponse,
 } from './masterData';

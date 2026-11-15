@@ -12,15 +12,20 @@
 var PICKING_LOTS_SHEET = 'PickingLots';
 var PICKING_LOT_BLOCKS_SHEET = 'PickingLotBlocks';
 var MASTER_DATA_SHEET = 'MasterData';
+var API_LOG_SHEET = 'ApiLog';
+var API_LOG_HEADERS = ['Timestamp', 'Method', 'Endpoint', 'RequestBody', 'ResponseBody'];
 
-// PickingLots sheet columns (1-based)
+// PickingLots sheet columns (1-based) — must match the deployed sheet headers:
+// LotID | HarvestDate | Block | Variety | Process | CherryWeightKg | CreatedDateTime | CreatedBy | Status
 var PL_LOT_ID = 1;
 var PL_HARVEST_DATE = 2;
-var PL_VARIETY_CODE = 3;
-var PL_TOTAL_WEIGHT = 4;
-var PL_STATUS_CODE = 5;
-var PL_CREATED_DATETIME = 6;
-var PL_CREATED_BY = 7;
+var PL_BLOCK = 3;
+var PL_VARIETY = 4;
+var PL_PROCESS = 5;
+var PL_CHERRY_WEIGHT = 6;
+var PL_CREATED_DATETIME = 7;
+var PL_CREATED_BY = 8;
+var PL_STATUS = 9;
 
 // PickingLotBlocks sheet columns (1-based)
 var PLB_LOT_ID = 1;
@@ -41,13 +46,16 @@ var MD_SORT_ORDER = 6;
  * @return {TextOutput} JSON response.
  */
 function doPost(e) {
+  var request;
+  var responsePayload;
   try {
-    var request = JSON.parse(e.postData.contents);
+    request = JSON.parse(e.postData.contents);
 
     // Validate required fields
     var validationError = validateRequest(request);
     if (validationError) {
-      return buildResponse(validationError);
+      responsePayload = validationError;
+      return buildResponse(responsePayload);
     }
 
     // Generate LotID (PLYYMMDD0001)
@@ -60,18 +68,22 @@ function doPost(e) {
     writePickingLotBlocks(lotId, request.blockCodes);
 
     // Return success response
-    return buildResponse({
+    responsePayload = {
       success: true,
       lotId: lotId,
       status: 'CREATED',
       message: 'Picking Lot created successfully.'
-    });
+    };
+    return buildResponse(responsePayload);
   } catch (err) {
-    return buildResponse({
+    responsePayload = {
       success: false,
       errorCode: 'SERVER_ERROR',
       message: 'Something went wrong while saving.'
-    });
+    };
+    return buildResponse(responsePayload);
+  } finally {
+    logApiCall('POST', '/exec', request, responsePayload);
   }
 }
 
@@ -85,42 +97,47 @@ function doPost(e) {
  * @return {TextOutput} JSON response.
  */
 function doGet(e) {
+  var resource = e && e.parameter ? e.parameter.resource : '';
+  var responsePayload;
   try {
-    var resource = e.parameter.resource;
-
     if (resource === 'masterdata') {
-      return handleMasterData();
+      responsePayload = handleMasterData();
+      return buildResponse(responsePayload);
     }
 
-    return buildResponse({
+    responsePayload = {
       success: false,
       errorCode: 'INVALID_RESOURCE',
       message: 'Unknown resource requested.'
-    });
+    };
+    return buildResponse(responsePayload);
   } catch (err) {
-    return buildResponse({
+    responsePayload = {
       success: false,
       errorCode: 'SERVER_ERROR',
       message: 'Something went wrong while loading data.'
-    });
+    };
+    return buildResponse(responsePayload);
+  } finally {
+    logApiCall('GET', '/exec?resource=' + resource, e ? e.parameter : null, responsePayload);
   }
 }
 
 /**
- * Read the MasterData sheet and return active records as JSON.
+ * Read the MasterData sheet and return active records.
  *
- * @return {TextOutput} JSON response with active MasterData records.
+ * @return {Object} Response payload object (wrapped by doGet).
  */
 function handleMasterData() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(MASTER_DATA_SHEET);
 
   if (!sheet) {
-    return buildResponse({
+    return {
       success: false,
       errorCode: 'SHEET_NOT_FOUND',
       message: 'MasterData sheet not found.'
-    });
+    };
   }
 
   var lastRow = sheet.getLastRow();
@@ -128,7 +145,7 @@ function handleMasterData() {
 
   // Empty sheet (no header) -> return empty data
   if (lastRow < 1 || lastCol < 1) {
-    return buildResponse({ success: true, data: [] });
+    return { success: true, data: [] };
   }
 
   // Read header row to locate required columns
@@ -141,16 +158,16 @@ function handleMasterData() {
   });
 
   if (missing.length > 0) {
-    return buildResponse({
+    return {
       success: false,
       errorCode: 'MISSING_COLUMNS',
       message: 'MasterData sheet is missing required columns: ' + missing.join(', ') + '.'
-    });
+    };
   }
 
   // No data rows -> return empty data
   if (lastRow < 2) {
-    return buildResponse({ success: true, data: [] });
+    return { success: true, data: [] };
   }
 
   var values = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
@@ -186,7 +203,7 @@ function handleMasterData() {
     });
   }
 
-  return buildResponse({ success: true, data: data });
+  return { success: true, data: data };
 }
 
 /**
@@ -257,6 +274,13 @@ function validateRequest(request) {
       message: 'Select a valid coffee variety.'
     };
   }
+  if (!request.processCode) {
+    return {
+      success: false,
+      errorCode: 'INVALID_PROCESS',
+      message: 'Select a valid coffee processing method.'
+    };
+  }
   if (
     !request.blockCodes ||
     !Array.isArray(request.blockCodes) ||
@@ -318,6 +342,9 @@ function generateLotId(harvestDate) {
 /**
  * Write a Picking Lot record to the PickingLots sheet.
  *
+ * Column layout matches the deployed sheet:
+ * LotID | HarvestDate | Block | Variety | Process | CherryWeightKg | CreatedDateTime | CreatedBy | Status
+ *
  * @param {string} lotId The generated LotID.
  * @param {Object} request The validated request body.
  */
@@ -329,11 +356,13 @@ function writePickingLot(lotId, request) {
   sheet.appendRow([
     lotId,
     new Date(request.harvestDate),
+    request.blockCodes.join(', '),
     request.varietyCode,
+    request.processCode,
     request.totalCherryWeightKg,
-    'CREATED',
     createdDateTime,
-    createdBy
+    createdBy,
+    'CREATED'
   ]);
 }
 
@@ -366,6 +395,51 @@ function getSheet(name) {
     sheet = ss.insertSheet(name);
   }
   return sheet;
+}
+
+/**
+ * Record an API request and its response in the ApiLog sheet.
+ *
+ * Runs in a finally block for every doPost/doGet call so the request body and
+ * response payload are always registered, including validation and error cases.
+ * Never throws — logging must never break the API response.
+ *
+ * @param {string} method The HTTP method (POST/GET).
+ * @param {string} endpoint The endpoint or resource requested.
+ * @param {*} requestBody The request body (parsed object) or query parameters.
+ * @param {*} responsePayload The response payload object.
+ */
+function logApiCall(method, endpoint, requestBody, responsePayload) {
+  try {
+    var sheet = getSheet(API_LOG_SHEET);
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(API_LOG_HEADERS);
+    }
+    sheet.appendRow([
+      new Date(),
+      method,
+      endpoint,
+      safeJson(requestBody),
+      safeJson(responsePayload)
+    ]);
+  } catch (e) {
+    // Logging must never break the API response.
+  }
+}
+
+/**
+ * Serialize a value to a JSON string for the log.
+ *
+ * @param {*} value The value to serialize.
+ * @return {string} JSON string (empty string when not serializable).
+ */
+function safeJson(value) {
+  try {
+    var json = JSON.stringify(value);
+    return json === undefined ? '' : json;
+  } catch (e) {
+    return String(value || '');
+  }
 }
 
 /**

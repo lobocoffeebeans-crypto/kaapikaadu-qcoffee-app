@@ -18,6 +18,7 @@ export const usePickingLot = () => {
     defaultValues: {
       harvestDate: '',
       variety: '',
+      processCode: '',
       blocks: [],
       totalCherryWeightKg: 0,
     },

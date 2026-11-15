@@ -20,6 +20,7 @@ export const VALIDATION_MESSAGE_KEYS = {
   HARVEST_DATE_REQUIRED: 'harvestDate.required',
   HARVEST_DATE_FUTURE: 'harvestDate.future',
   VARIETY_REQUIRED: 'variety.required',
+  PROCESS_REQUIRED: 'process.required',
   BLOCK_REQUIRED: 'block.required',
   WEIGHT_REQUIRED: 'weight.required',
   WEIGHT_NUMERIC: 'weight.numeric',

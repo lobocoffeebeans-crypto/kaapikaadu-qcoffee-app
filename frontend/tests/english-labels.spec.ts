@@ -35,6 +35,17 @@ test.describe('English labels in MasterData dropdowns', () => {
     expect(varietyLabels).toContain('Typica');
     expect(varietyLabels).toContain('Geisha');
   });
+
+  test('Process dropdown uses stable codes and English labels', async ({ page }) => {
+    await page.goto('/');
+
+    const processSelect = page.locator('select').nth(1);
+    const processOptions = processSelect.locator('option');
+    await expect(processOptions).toHaveCount(5); // placeholder + 4 processes
+
+    await expect(processSelect.locator('option[value="NATURAL"]')).toHaveText('Natural');
+    await expect(processSelect.locator('option[value="WASHED"]')).toHaveText('Washed');
+  });
 });
 
 test.describe('English validation error messages', () => {
@@ -62,6 +73,16 @@ test.describe('English validation error messages', () => {
 
     // Verify English error message appears
     await expect(page.getByText('Please select a coffee variety.')).toBeVisible();
+  });
+
+  test('Shows English error for empty process', async ({ page }) => {
+    await page.goto('/');
+
+    const processSelect = page.locator('select').nth(1);
+    await processSelect.focus();
+    await processSelect.blur();
+
+    await expect(page.getByText('Please select a process.')).toBeVisible();
   });
 
   test('Shows English error for no blocks selected', async ({ page }) => {
@@ -124,6 +145,9 @@ test.describe('Save and Cancel buttons', () => {
     const varietySelect = page.locator('select').nth(0);
     await varietySelect.selectOption('SLN6');
 
+    const processSelect = page.locator('select').nth(1);
+    await processSelect.selectOption('NATURAL');
+
     const firstBlock = page.locator('input[type="checkbox"]').first();
     await firstBlock.check();
 
@@ -145,6 +169,9 @@ test.describe('Save and Cancel buttons', () => {
     const varietySelect = page.locator('select').nth(0);
     await varietySelect.selectOption('SLN6');
 
+    const processSelect = page.locator('select').nth(1);
+    await processSelect.selectOption('NATURAL');
+
     const firstBlock = page.locator('input[type="checkbox"]').first();
     await firstBlock.check();
 
@@ -159,6 +186,7 @@ test.describe('Save and Cancel buttons', () => {
     const today = new Date().toISOString().split('T')[0];
     await expect(harvestDate).toHaveValue(today);
     await expect(varietySelect).toHaveValue('');
+    await expect(processSelect).toHaveValue('');
     await expect(firstBlock).not.toBeChecked();
     await expect(weight).toHaveValue('0');
   });

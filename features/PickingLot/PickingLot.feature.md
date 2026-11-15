@@ -20,7 +20,7 @@ BR-001	A Picking Lot contains exactly one coffee variety.
 BR-002	A Picking Lot may contain one or more blocks.
 BR-003	Harvest Date may be today or a past date. Future dates are not allowed. Default Date is Today
 BR-004	Total Cherry Weight is measured after combining cherries from all selected blocks.Default zero. Must be greater or equal to zero
-BR-005	Process is not selected at this stage.
+BR-005	Process , Block, Variety , CherryWeightKg is selected in the froentend form at this stage.
 BR-006	Yeast is not selected at this stage.
 BR-007	Tank assignment is not selected at this stage.
 BR-008	Lot ID is generated automatically.

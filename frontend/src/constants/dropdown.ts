@@ -14,8 +14,8 @@ export const varietyOptions = [
 ];
 
 export const processOptions = [
-  { value: 'Washed', label: 'Washed' },
-  { value: 'Natural', label: 'Natural' },
-  { value: 'Honey', label: 'Honey' },
-  { value: 'Anaerobic', label: 'Anaerobic' },
+  { value: 'WASHED', label: 'Washed' },
+  { value: 'NATURAL', label: 'Natural' },
+  { value: 'HONEY', label: 'Honey' },
+  { value: 'ANAEROBIC', label: 'Anaerobic' },
 ];

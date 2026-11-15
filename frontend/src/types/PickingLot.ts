@@ -17,9 +17,10 @@ export interface PickingLot {
  */
 export interface CreatePickingLotRequest {
   harvestDate: string;
-  varietyCode: string;
-  totalCherryWeightKg: number;
   blockCodes: string[];
+  varietyCode: string;
+  processCode: string;
+  totalCherryWeightKg: number;
 }
 
 /**
@@ -53,11 +54,12 @@ export interface MasterDataOption {
 
 /**
  * PickingLotFormData - Form-specific data structure used by the UI form.
- * Supports multi-select blocks and excludes process (BR-005).
+ * Supports multi-select blocks and requires a selected processing method.
  */
 export interface PickingLotFormData {
   harvestDate: string;
   variety: string;
+  processCode: string;
   blocks: string[];
   totalCherryWeightKg: number;
 }

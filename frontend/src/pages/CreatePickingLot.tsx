@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import TextField from '../components/TextField';
 import Dropdown from '../components/Dropdown';
 import CheckboxGroup from '../components/CheckboxGroup';
@@ -9,7 +9,9 @@ import { pickingLotService } from '../services/pickingLotService';
 import { masterDataService } from '../services/masterDataService';
 import { VALIDATION_MESSAGE_KEYS } from '../constants/pickingLot';
 import { getValidationMessage } from '../constants/translations';
+import { processOptions } from '../constants/dropdown';
 import type { PickingLotFormData, CreatePickingLotRequest } from '../types/PickingLot';
+import type { DropdownOption } from '../services/masterDataService';
 
 const CreatePickingLot = () => {
   const {
@@ -26,9 +28,39 @@ const CreatePickingLot = () => {
 
   const [isSaving, setIsSaving] = useState(false);
   const [successLotId, setSuccessLotId] = useState<string | null>(null);
+  const [blockOptions, setBlockOptions] = useState<DropdownOption[]>([]);
+  const [varietyOptions, setVarietyOptions] = useState<DropdownOption[]>([]);
+  const [isMasterDataLoading, setIsMasterDataLoading] = useState(true);
+  const [masterDataError, setMasterDataError] = useState<string | null>(null);
 
-  const blockOptions = masterDataService.getBlocks();
-  const varietyOptions = masterDataService.getVarieties();
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadMasterData = async () => {
+      try {
+        await masterDataService.load();
+        if (isMounted) {
+          setBlockOptions(masterDataService.getBlocks(language));
+          setVarietyOptions(masterDataService.getVarieties(language));
+        }
+      } catch (error) {
+        if (isMounted) {
+          setMasterDataError(
+            error instanceof Error ? error.message : 'Unable to load MasterData.'
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsMasterDataLoading(false);
+        }
+      }
+    };
+
+    void loadMasterData();
+    return () => {
+      isMounted = false;
+    };
+  }, [language]);
 
   const onSubmit = async (data: PickingLotFormData) => {
     setIsSaving(true);
@@ -36,6 +68,7 @@ const CreatePickingLot = () => {
       const request: CreatePickingLotRequest = {
         harvestDate: data.harvestDate,
         varietyCode: data.variety,
+        processCode: data.processCode,
         totalCherryWeightKg: data.totalCherryWeightKg,
         blockCodes: data.blocks,
       };
@@ -44,6 +77,7 @@ const CreatePickingLot = () => {
       reset({
         harvestDate: today,
         variety: '',
+        processCode: '',
         blocks: [],
         totalCherryWeightKg: 0,
       });
@@ -58,6 +92,7 @@ const CreatePickingLot = () => {
     reset({
       harvestDate: today,
       variety: '',
+      processCode: '',
       blocks: [],
       totalCherryWeightKg: 0,
     });
@@ -73,6 +108,12 @@ const CreatePickingLot = () => {
         <h1 className="text-xl font-semibold text-gray-900 mb-6 text-center">
           New Picking Lot
         </h1>
+
+        {masterDataError && (
+          <p role="alert" className="mb-4 text-sm text-red-600">
+            Unable to load form options: {masterDataError}
+          </p>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <TextField
@@ -93,6 +134,16 @@ const CreatePickingLot = () => {
             error={errors.variety?.message}
             registration={register('variety', {
               required: getValidationMessage(VALIDATION_MESSAGE_KEYS.VARIETY_REQUIRED, language),
+            })}
+          />
+
+          <Dropdown
+            label="Process"
+            options={processOptions}
+            placeholder="Select Process"
+            error={errors.processCode?.message}
+            registration={register('processCode', {
+              required: getValidationMessage(VALIDATION_MESSAGE_KEYS.PROCESS_REQUIRED, language),
             })}
           />
 
@@ -119,7 +170,10 @@ const CreatePickingLot = () => {
           />
 
           <div className="mt-6 space-y-3">
-            <SaveButton disabled={!isValid} loading={isSaving} />
+            <SaveButton
+              disabled={!isValid || isMasterDataLoading || masterDataError !== null}
+              loading={isSaving}
+            />
             <CancelButton onClick={onCancel} disabled={isSaving} />
           </div>
         </form>

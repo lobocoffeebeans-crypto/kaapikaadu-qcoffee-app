@@ -42,10 +42,11 @@ Picking Lot - UI Validation Rules
 | UI-001 | Harvest Date        | Required                            | Harvest Date is required.             |
 | UI-002 | Harvest Date        | Cannot be in the future             | Harvest Date cannot be in the future. |
 | UI-003 | Variety             | Required                            | Please select a coffee variety.       |
-| UI-004 | Blocks              | At least one block must be selected | Select at least one block.            |
-| UI-005 | Total Cherry Weight | Required                            | Enter the total cherry weight.        |
-| UI-006 | Total Cherry Weight | Must be numeric                     | Weight must be a valid number.        |
-| UI-007 | Total Cherry Weight | Must be greater than zero           | Weight must be greater than zero.     |
+| UI-004 | Process             | Required                            | Please select a process.              |
+| UI-005 | Blocks              | At least one block must be selected | Select at least one block.            |
+| UI-006 | Total Cherry Weight | Required                            | Enter the total cherry weight.        |
+| UI-007 | Total Cherry Weight | Must be numeric                     | Weight must be a valid number.        |
+| UI-008 | Total Cherry Weight | Must be greater than zero           | Weight must be greater than zero.     |
 
 
 Input Validation
@@ -71,6 +72,12 @@ Must exist in MasterData.
 The user should only be able to choose from the dropdown.
 
 No free text.
+
+Process
+
+Must be selected from the available processing methods.
+
+The request stores the stable process code (for example, `NATURAL`), not the display label.
 
 Blocks
 
@@ -133,6 +140,7 @@ Harvest Date required	✅	✅
 Future date	✅	✅
 Variety selected	✅	✅
 Block selected	✅	✅
+Process selected ✅	✅
 Weight numeric	✅	✅
 Weight > 0	✅	✅
 Lot ID generation	❌	✅
@@ -146,7 +154,7 @@ One validation I'd add for your estate workflow
 
 I recommend adding a confirmation when the user has entered data but tries to leave the page without saving.
 
-Rule UI-008 – Unsaved Changes /Cancel Button
+Rule UI-009 – Unsaved Changes /Cancel Button
 
 If the user has modified any field and attempts to navigate away or refresh the page:
 Show: "You have unsaved changes. Do you want to leave without saving?"

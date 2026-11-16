@@ -21,6 +21,8 @@ export const usePickingLot = () => {
       processCode: '',
       blocks: [],
       totalCherryWeightKg: 0,
+      floats: '',
+      greenCoffee: '',
     },
   });
 

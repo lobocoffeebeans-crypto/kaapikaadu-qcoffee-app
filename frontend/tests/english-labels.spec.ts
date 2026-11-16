@@ -46,6 +46,15 @@ test.describe('English labels in MasterData dropdowns', () => {
     await expect(processSelect.locator('option[value="NATURAL"]')).toHaveText('Natural');
     await expect(processSelect.locator('option[value="WASHED"]')).toHaveText('Washed');
   });
+
+  test('Floats and Green Coffee are optional number inputs', async ({ page }) => {
+    await page.goto('/');
+
+    const numberInputs = page.locator('input[type="number"]');
+    await expect(numberInputs).toHaveCount(3);
+    await expect(page.getByText('Floats', { exact: true })).toBeVisible();
+    await expect(page.getByText('Green Coffee', { exact: true })).toBeVisible();
+  });
 });
 
 test.describe('English validation error messages', () => {

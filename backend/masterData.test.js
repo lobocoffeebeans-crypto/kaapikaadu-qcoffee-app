@@ -268,10 +268,20 @@ const missingProcessError = validateRequest({
 });
 assert(missingProcessError.errorCode === 'INVALID_PROCESS', 'missing processCode is rejected');
 
+const invalidFloatsError = validateRequest({
+  harvestDate: '2026-08-03',
+  varietyCode: 'SLN6',
+  processCode: 'NATURAL',
+  totalCherryWeightKg: 320,
+  floats: '5',
+  blockCodes: ['BLOCK01'],
+});
+assert(invalidFloatsError.errorCode === 'INVALID_FLOATS', 'non-numeric floats is rejected');
+
 // --- Test 11: Regression - doPost still creates a Picking Lot ---
 console.log('\nTest 11: Regression - doPost still creates a Picking Lot');
 sheets['PickingLots'] = MockSheet('PickingLots', [
-  ['LotID', 'HarvestDate', 'Block', 'Variety', 'Process', 'CherryWeightKg', 'CreatedDateTime', 'CreatedBy', 'Status'],
+  ['LotID', 'HarvestDate', 'Block', 'Variety', 'Process', 'CherryWeightKg', 'Floats', 'GreenCoffee', 'CreatedDateTime', 'CreatedBy', 'Status'],
 ]);
 sheets['PickingLotBlocks'] = MockSheet('PickingLotBlocks', [
   ['LotID', 'BlockCode'],
@@ -285,6 +295,8 @@ const postResponse = parseResponse(
         varietyCode: 'SLN6',
         processCode: 'NATURAL',
         totalCherryWeightKg: 320,
+        floats: 5,
+        greenCoffee: 2.5,
         blockCodes: ['BLOCK01', 'BLOCK03', 'BLOCK05'],
       }),
     },
@@ -297,7 +309,7 @@ assert(postResponse.message === 'Picking Lot created successfully.', 'doPost mes
 
 // --- Verify the data is ACTUALLY written to the sheets (guards against silent write bugs) ---
 // PickingLots sheet: header + 1 data row. Row must use the deployed column layout:
-// LotID | HarvestDate | Block | Variety | Process | CherryWeightKg | CreatedDateTime | CreatedBy | Status
+// LotID | HarvestDate | Block | Variety | Process | CherryWeightKg | Floats | GreenCoffee | CreatedDateTime | CreatedBy | Status
 const plRows = sheets['PickingLots'].rows;
 assert(plRows.length === 2, `PickingLots has header + 1 data row (got ${plRows.length})`);
 const plRow = plRows[1];
@@ -313,9 +325,11 @@ assert(plRow[2] === 'BLOCK01, BLOCK03, BLOCK05', `PickingLots Block written (got
 assert(plRow[3] === 'SLN6', `PickingLots Variety written (got ${plRow[3]})`);
 assert(plRow[4] === 'NATURAL', `PickingLots Process written (got ${JSON.stringify(plRow[4])})`);
 assert(plRow[5] === 320, `PickingLots CherryWeightKg written (got ${plRow[5]})`);
-assert(plRow[6] instanceof Date, 'PickingLots CreatedDateTime written');
-assert(plRow[7] === 'test@example.com', `PickingLots CreatedBy written (got ${plRow[7]})`);
-assert(plRow[8] === 'CREATED', `PickingLots Status written (got ${plRow[8]})`);
+assert(plRow[6] === 5, `PickingLots Floats written (got ${plRow[6]})`);
+assert(plRow[7] === 2.5, `PickingLots GreenCoffee written (got ${plRow[7]})`);
+assert(plRow[8] instanceof Date, 'PickingLots CreatedDateTime written');
+assert(plRow[9] === 'test@example.com', `PickingLots CreatedBy written (got ${plRow[9]})`);
+assert(plRow[10] === 'CREATED', `PickingLots Status written (got ${plRow[10]})`);
 
 // PickingLotBlocks sheet: header + one row per selected Block.
 const plbRows = sheets['PickingLotBlocks'].rows;
@@ -333,8 +347,28 @@ assert(
   `Block BLOCK05 written (got ${JSON.stringify(plbRows[3])})`
 );
 
-// --- Test 12: ApiLog sheet records every request body and response ---
-console.log('\nTest 12: ApiLog sheet records every request body and response');
+// --- Test 12: Optional numeric fields can be omitted ---
+console.log('\nTest 12: Optional numeric fields can be omitted');
+const blankOptionalResponse = parseResponse(
+  doPost({
+    postData: {
+      contents: JSON.stringify({
+        harvestDate: '2026-08-03',
+        varietyCode: 'SLN6',
+        processCode: 'NATURAL',
+        totalCherryWeightKg: 125,
+        blockCodes: ['BLOCK02'],
+      }),
+    },
+  })
+);
+assert(blankOptionalResponse.success === true, 'doPost succeeds with optional fields omitted');
+const blankOptionalRow = sheets['PickingLots'].rows[2];
+assert(blankOptionalRow[6] === '', 'Omitted Floats is written as a blank cell');
+assert(blankOptionalRow[7] === '', 'Omitted GreenCoffee is written as a blank cell');
+
+// --- Test 13: ApiLog sheet records every request body and response ---
+console.log('\nTest 13: ApiLog sheet records every request body and response');
 const apiLogRows = sheets['ApiLog'].rows;
 assert(apiLogRows.length >= 3, `ApiLog has header + at least 2 logged calls (got ${apiLogRows.length})`);
 assert(
@@ -350,9 +384,20 @@ assert(
     varietyCode: 'SLN6',
     processCode: 'NATURAL',
     totalCherryWeightKg: 320,
+    floats: 5,
+    greenCoffee: 2.5,
     blockCodes: ['BLOCK01', 'BLOCK03', 'BLOCK05'],
   }),
   'POST request body is logged to ApiLog'
+);
+const blankOptionalLog = apiLogRows.find(
+  (r) => r[1] === 'POST' && r[4].includes(blankOptionalResponse.lotId)
+);
+assert(!!blankOptionalLog, 'POST with blank optional values is logged');
+assert(
+  !Object.prototype.hasOwnProperty.call(JSON.parse(blankOptionalLog[3]), 'floats') &&
+    !Object.prototype.hasOwnProperty.call(JSON.parse(blankOptionalLog[3]), 'greenCoffee'),
+  'Blank optional fields are not coerced or logged as zero'
 );
 assert(
   postLog[4].includes('PL2608030001') && postLog[4].includes('Picking Lot created successfully.'),

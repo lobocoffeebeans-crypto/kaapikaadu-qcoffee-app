@@ -12,6 +12,8 @@ test.describe('Picking Lot API integration', () => {
       expect(body.varietyCode).toBe('SLN6');
       expect(body.processCode).toBe('NATURAL');
       expect(body.totalCherryWeightKg).toBe(320);
+      expect(body.floats).toBe(5);
+      expect(body.greenCoffee).toBe(2.5);
       expect(body.blockCodes).toEqual(['BLOCK01', 'BLOCK03', 'BLOCK05']);
 
       await route.fulfill({
@@ -44,7 +46,9 @@ test.describe('Picking Lot API integration', () => {
     await blockCheckboxes.nth(4).check(); // BLOCK05
 
     const weight = page.locator('input[type="number"]');
-    await weight.fill('320');
+    await weight.nth(0).fill('320');
+    await weight.nth(1).fill('5');
+    await weight.nth(2).fill('2.5');
 
     // Click Save
     const saveButton = page.getByRole('button', { name: 'Save' });
@@ -58,6 +62,9 @@ test.describe('Picking Lot API integration', () => {
   test('Save button is disabled while saving', async ({ page }) => {
     // Mock the API endpoint with a delayed response to observe the loading state
     await page.route('**/api/pickinglots', async (route) => {
+      const body = route.request().postDataJSON();
+      expect(Object.prototype.hasOwnProperty.call(body, 'floats')).toBe(false);
+      expect(Object.prototype.hasOwnProperty.call(body, 'greenCoffee')).toBe(false);
       await new Promise((resolve) => setTimeout(resolve, 500));
       await route.fulfill({
         status: 201,
@@ -138,6 +145,8 @@ test.describe('Picking Lot API integration', () => {
 
     const weight = page.locator('input[type="number"]');
     await weight.fill('320');
+    await weight.nth(1).fill('5');
+    await weight.nth(2).fill('2.5');
 
     // Click Save
     const saveButton = page.getByRole('button', { name: 'Save' });
@@ -155,6 +164,8 @@ test.describe('Picking Lot API integration', () => {
     await expect(varietySelect).toHaveValue('');
     await expect(processSelect).toHaveValue('');
     await expect(firstBlock).not.toBeChecked();
-    await expect(weight).toHaveValue('0');
+    await expect(weight.nth(0)).toHaveValue('0');
+    await expect(weight.nth(1)).toHaveValue('');
+    await expect(weight.nth(2)).toHaveValue('');
   });
 });

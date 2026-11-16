@@ -30,6 +30,18 @@ Total Cherry Weight
 
 -------------------------------------
 
+Floats (optional)
+
+[5]
+
+-------------------------------------
+
+Green Coffee (optional)
+
+[2.5]
+
+-------------------------------------
+
 [SAVE]  [ CANCEL ] 
 
 ------------------------------------------------
@@ -97,6 +109,7 @@ Harvest Date is valid
 Variety selected
 At least one Block selected
 Weight > 0
+Floats and Green Coffee may be left blank.
 Not currently saving
 
 During save:

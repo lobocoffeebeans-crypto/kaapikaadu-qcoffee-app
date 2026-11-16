@@ -99,6 +99,10 @@ interface PickingLot {
 
     totalCherryWeightKg:number;
 
+    floats?:number;
+
+    greenCoffee?:number;
+
     blocks:string[];
 
     status:string;
@@ -116,9 +120,11 @@ C	Block	BLOCK01, BLOCK03, BLOCK05	Text (comma-separated)
 D	Variety	SLN6	Code
 E	Process	NAturals	Text
 F	CherryWeightKg	320	Number
-G	CreatedDateTime	03-Aug-2026 16:10	DateTime
-H	CreatedBy	Austin	Text
-I	Status	CREATED	Code
+G	Floats	5	Number (optional)
+H	GreenCoffee	2.5	Number (optional)
+I	CreatedDateTime	03-Aug-2026 16:10	DateTime
+J	CreatedBy	Austin	Text
+K	Status	CREATED	Code
 
 
 2. PickingLotBlocks (normalized detail)

@@ -7,6 +7,8 @@ export interface PickingLot {
   harvestDate: Date;
   variety: string;
   totalCherryWeightKg: number;
+  floats?: number;
+  greenCoffee?: number;
   blocks: string[];
   status: string;
 }
@@ -21,6 +23,8 @@ export interface CreatePickingLotRequest {
   varietyCode: string;
   processCode: string;
   totalCherryWeightKg: number;
+  floats?: number;
+  greenCoffee?: number;
 }
 
 /**
@@ -62,4 +66,6 @@ export interface PickingLotFormData {
   processCode: string;
   blocks: string[];
   totalCherryWeightKg: number;
+  floats: string;
+  greenCoffee: string;
 }

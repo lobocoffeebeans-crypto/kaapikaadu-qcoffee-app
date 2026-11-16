@@ -70,6 +70,8 @@ const CreatePickingLot = () => {
         varietyCode: data.variety,
         processCode: data.processCode,
         totalCherryWeightKg: data.totalCherryWeightKg,
+        ...(data.floats !== '' ? { floats: Number(data.floats) } : {}),
+        ...(data.greenCoffee !== '' ? { greenCoffee: Number(data.greenCoffee) } : {}),
         blockCodes: data.blocks,
       };
       const response = await pickingLotService.createPickingLot(request);
@@ -80,6 +82,8 @@ const CreatePickingLot = () => {
         processCode: '',
         blocks: [],
         totalCherryWeightKg: 0,
+        floats: '',
+        greenCoffee: '',
       });
     } catch {
       // Out of scope: network/error handling. Keep form intact.
@@ -95,6 +99,8 @@ const CreatePickingLot = () => {
       processCode: '',
       blocks: [],
       totalCherryWeightKg: 0,
+      floats: '',
+      greenCoffee: '',
     });
   };
 
@@ -167,6 +173,18 @@ const CreatePickingLot = () => {
               valueAsNumber: true,
               validate: validateCherryWeight,
             })}
+          />
+
+          <TextField
+            label="Floats"
+            type="number"
+            registration={register('floats')}
+          />
+
+          <TextField
+            label="Green Coffee"
+            type="number"
+            registration={register('greenCoffee')}
           />
 
           <div className="mt-6 space-y-3">

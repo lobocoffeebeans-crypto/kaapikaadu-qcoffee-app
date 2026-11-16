@@ -16,16 +16,18 @@ var API_LOG_SHEET = 'ApiLog';
 var API_LOG_HEADERS = ['Timestamp', 'Method', 'Endpoint', 'RequestBody', 'ResponseBody'];
 
 // PickingLots sheet columns (1-based) — must match the deployed sheet headers:
-// LotID | HarvestDate | Block | Variety | Process | CherryWeightKg | CreatedDateTime | CreatedBy | Status
+// LotID | HarvestDate | Block | Variety | Process | CherryWeightKg | Floats | GreenCoffee | CreatedDateTime | CreatedBy | Status
 var PL_LOT_ID = 1;
 var PL_HARVEST_DATE = 2;
 var PL_BLOCK = 3;
 var PL_VARIETY = 4;
 var PL_PROCESS = 5;
 var PL_CHERRY_WEIGHT = 6;
-var PL_CREATED_DATETIME = 7;
-var PL_CREATED_BY = 8;
-var PL_STATUS = 9;
+var PL_FLOATS = 7;
+var PL_GREEN_COFFEE = 8;
+var PL_CREATED_DATETIME = 9;
+var PL_CREATED_BY = 10;
+var PL_STATUS = 11;
 
 // PickingLotBlocks sheet columns (1-based)
 var PLB_LOT_ID = 1;
@@ -302,7 +304,34 @@ function validateRequest(request) {
       message: 'Weight must be greater than zero.'
     };
   }
+  if (!isOptionalNumber(request.floats)) {
+    return {
+      success: false,
+      errorCode: 'INVALID_FLOATS',
+      message: 'Floats must be a number.'
+    };
+  }
+  if (!isOptionalNumber(request.greenCoffee)) {
+    return {
+      success: false,
+      errorCode: 'INVALID_GREEN_COFFEE',
+      message: 'Green Coffee must be a number.'
+    };
+  }
   return null;
+}
+
+/**
+ * Check that an optional request value is absent or a finite number.
+ *
+ * @param {*} value The optional value.
+ * @return {boolean} Whether the value is valid.
+ */
+function isOptionalNumber(value) {
+  return value === undefined ||
+    value === null ||
+    value === '' ||
+    (typeof value === 'number' && isFinite(value));
 }
 
 /**
@@ -343,7 +372,7 @@ function generateLotId(harvestDate) {
  * Write a Picking Lot record to the PickingLots sheet.
  *
  * Column layout matches the deployed sheet:
- * LotID | HarvestDate | Block | Variety | Process | CherryWeightKg | CreatedDateTime | CreatedBy | Status
+ * LotID | HarvestDate | Block | Variety | Process | CherryWeightKg | Floats | GreenCoffee | CreatedDateTime | CreatedBy | Status
  *
  * @param {string} lotId The generated LotID.
  * @param {Object} request The validated request body.
@@ -360,6 +389,8 @@ function writePickingLot(lotId, request) {
     request.varietyCode,
     request.processCode,
     request.totalCherryWeightKg,
+    request.floats == null || request.floats === '' ? '' : request.floats,
+    request.greenCoffee == null || request.greenCoffee === '' ? '' : request.greenCoffee,
     createdDateTime,
     createdBy,
     'CREATED'
